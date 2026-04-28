@@ -1,24 +1,30 @@
-# Mini Language Compiler (Web-Based)
+# 🚀 Mini Language Compiler (Web-Based)
 
-## 📌 Project Description
+## 📌 Overview
 
-This project is a web-based Mini Language Compiler developed using Python and Flask. It performs lexical and syntax analysis on user-provided source code and displays tokens, errors, parse results, and symbol table in a user-friendly interface.
+This project is a **web-based Mini Language Compiler** built using Python and Flask.
+It performs **Lexical Analysis** and **Syntax Analysis** on user input code and displays tokens, errors, and symbol table in an interactive interface.
 
-## 🚀 Features
+---
 
-* Lexical Analysis (Token Generation)
-* Syntax Analysis using Parser
-* Error Detection with Suggestions
-* Symbol Table Generation
-* Web Interface using Flask
-* Real-time Code Compilation
+## 🌟 Features
 
-## 🛠️ Technologies Used
+* 🔍 Lexical Analysis (Token Generation using Regex)
+* 🧠 Syntax Analysis (Parser Implementation)
+* ⚠️ Smart Error Detection & Explanation
+* 📊 Symbol Table Generation
+* 🌐 Web Interface using Flask
+* ⚡ Real-time Code Processing
 
-* Python
-* Flask
-* HTML, CSS
-* Regular Expressions
+---
+
+## 🛠️ Tech Stack
+
+* **Backend:** Python (Flask)
+* **Frontend:** HTML, CSS
+* **Core Logic:** Regular Expressions, Parsing Techniques
+
+---
 
 ## 📂 Project Structure
 
@@ -36,35 +42,57 @@ project/
        └── index.html
 ```
 
+---
+
 ## ▶️ How to Run
 
-1. Install dependencies:
+### 1️⃣ Install Dependencies
 
 ```
 pip install flask
 ```
 
-2. Run the application:
+### 2️⃣ Run Application
 
 ```
 python app.py
 ```
 
-3. Open browser and go to:
+### 3️⃣ Open in Browser
 
 ```
 http://127.0.0.1:5000/
 ```
 
-## 📊 Output
+---
 
-* Tokens list
-* Syntax errors (if any)
-* Parse tree
-* Symbol table
+## 📊 Output Includes
 
-## 🎯 Conclusion
+* ✅ Tokens List
+* ✅ Syntax Errors (if any)
+* ✅ Parse Results
+* ✅ Symbol Table
 
-This project demonstrates the working of a compiler front-end including lexical and syntax analysis along with a web interface for better visualization.
+---
 
+## 💡 Working
 
+1. User inputs code in the web interface
+2. Lexer breaks code into tokens
+3. Parser checks syntax rules
+4. Errors are detected and explained
+5. Symbol table stores identifiers
+
+---
+
+## 🎯 Applications
+
+* Compiler Design Learning
+* Educational Tools
+* Code Analysis Systems
+
+---
+
+## ⭐ Conclusion
+
+This project demonstrates the working of a **compiler front-end**, including lexical and syntax analysis, integrated with a web-based interface for better usability.
