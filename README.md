@@ -67,6 +67,4 @@ http://127.0.0.1:5000/
 
 This project demonstrates the working of a compiler front-end including lexical and syntax analysis along with a web interface for better visualization.
 
-## 👨‍💻 Author
 
-Rudra Pratap Singh
