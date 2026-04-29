@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Mini Language Compiler</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ══ HEADER ══════════════════════════════════════════════ -->
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">⚙</span>
+      <div>
+        <h1>Mini Language Compiler</h1>
+        <p>Lexical · Syntax · Parse Tree · Symbol Table</p>
+      </div>
+    </div>
+    <span class="header-tag">v3 · Visualization Edition</span>
+  </div>
+</header>
+
+<!-- ══ MAIN ════════════════════════════════════════════════ -->
+<main>
+
+  <!-- ── LEFT PANEL: Code Editor ─────────────────────────── -->
+  <section class="panel editor-panel">
+    <div class="panel-header">
+      <span>📝 Source Code Editor</span>
+      <div class="editor-actions">
+
+        <div class="samples-wrapper">
+          <button id="btn-samples" class="btn btn-ghost">📋 Samples ▾</button>
+          <div id="samples-menu" class="samples-menu">
+
+            <button class="sample-item" data-sample="1">
+              <span class="sample-icon">✅</span>
+              <div>
+                <div class="sample-label">Sample 1 — Clean Valid Program</div>
+                <div class="sample-desc">Declarations, if-else, while loop — 0 errors</div>
+              </div>
+            </button>
+
+            <button class="sample-item" data-sample="2">
+              <span class="sample-icon">🏗</span>
+              <div>
+                <div class="sample-label">Sample 2 — Large Valid Program</div>
+                <div class="sample-desc">110+ lines, nested loops, complex logic — 0 errors</div>
+              </div>
+            </button>
+
+            <button class="sample-item" data-sample="3">
+              <span class="sample-icon">🐛</span>
+              <div>
+                <div class="sample-label">Sample 3 — Multi-Error Program</div>
+                <div class="sample-desc">Lexical + Syntax + Validation — graph demo</div>
+              </div>
+            </button>
+
+            <button class="sample-item" data-sample="4">
+              <span class="sample-icon">🚫</span>
+              <div>
+                <div class="sample-label">Sample 4 — Unsupported Features</div>
+                <div class="sample-desc">Functions + arrays — triggers Unsupported errors</div>
+              </div>
+            </button>
+
+          </div>
+        </div>
+
+        <button id="btn-clear" class="btn btn-ghost">Clear</button>
+      </div>
+    </div>
+
+    <div class="editor-wrap">
+      <div class="line-numbers" id="line-numbers">1</div>
+      <textarea id="code-input" spellcheck="false" autocorrect="off" autocapitalize="off"
+        placeholder="Enter source code here…&#10;&#10;Example:&#10;  int x = 5;&#10;  if (x > 3) {&#10;      printf(x);&#10;  }"></textarea>
+    </div>
+
+    <div class="editor-footer">
+      <span id="line-col-info" class="info-text">Line 1, Col 1</span>
+      <button id="btn-compile" class="btn btn-primary">
+        <span id="btn-label">▶ Compile</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ── RIGHT PANEL: Output ──────────────────────────────── -->
+  <section class="panel output-panel">
+    <div class="panel-header">
+      <span>🖥 Compiler Output</span>
+      <button id="btn-copy" class="btn btn-ghost" style="display:none">Copy Tree</button>
+    </div>
+
+    <!-- Idle -->
+    <div id="output-idle" class="output-idle">
+      <div class="idle-icon">⚙</div>
+      <p>Write code and click <strong>Compile</strong> to see results.<br>
+         Click an error type in the chart to drill down.</p>
+    </div>
+
+    <!-- Loading -->
+    <div id="output-loading" class="output-loading" style="display:none">
+      <div class="spinner"></div>
+      <p>Compiling…</p>
+    </div>
+
+    <!-- Results -->
+    <div id="output-results" style="display:none">
+
+      <!-- Status badge -->
+      <div id="status-badge" class="status-badge"></div>
+
+      <!-- ════ LEVEL 1: ERROR CHART ════ -->
+      <div id="chart-section" style="display:none">
+        <div class="chart-header">
+          <div class="chart-title">⬡ Error Distribution</div>
+          <div style="text-align:right">
+            <div id="chart-total" class="chart-total"></div>
+            <div id="chart-total-label" class="chart-total-label"></div>
+          </div>
+        </div>
+        <div id="chart-body" class="chart-body">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+      <!-- ════ LEVEL 2: DRILL-DOWN ════ -->
+      <div id="drilldown-section" style="display:none">
+        <div class="drilldown-header">
+          <button class="drilldown-back" id="drilldown-back" title="Back to chart">←</button>
+          <span class="drilldown-title">Category Breakdown —</span>
+          <span id="drilldown-type-badge" class="drilldown-type-badge"></span>
+        </div>
+        <div id="category-grid" class="category-grid"></div>
+      </div>
+
+      <!-- ════ LEVEL 3: ERROR DETAILS ════ -->
+      <div id="detail-section" style="display:none">
+        <div class="detail-header">
+          <button class="detail-back" id="detail-back" title="Back to categories">←</button>
+          <div class="detail-breadcrumb">
+            <span id="crumb-type"></span>
+            <span class="crumb-sep">›</span>
+            <span id="crumb-cat" class="crumb-active"></span>
+          </div>
+        </div>
+        <div id="detail-cards" class="detail-cards"></div>
+      </div>
+
+      <!-- ════ COMPILER OUTPUT TABS ════ -->
+      <div id="tabs-container" style="display:none">
+        <div class="tab-bar">
+          <button class="tab-btn active" data-tab="tokens">
+            Tokens <span id="token-count-badge" class="badge"></span>
+          </button>
+          <button class="tab-btn" data-tab="tree">Parse Tree</button>
+          <button class="tab-btn" data-tab="symtable">
+            Symbol Table <span id="sym-count-badge" class="badge"></span>
+          </button>
+        </div>
+
+        <div id="tab-tokens" class="tab-content active">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Token Type</th><th>Value</th><th>Line</th></tr></thead>
+              <tbody id="token-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tab-tree" class="tab-content">
+          <pre id="parse-tree-output" class="tree-output"></pre>
+        </div>
+
+        <div id="tab-symtable" class="tab-content">
+          <div id="sym-empty" class="sym-empty" style="display:none">
+            <p>No variables declared in this program.</p>
+          </div>
+          <div class="table-wrap" id="sym-table-wrap">
+            <table>
+              <thead><tr><th>Variable</th><th>Type</th><th>Declared At</th></tr></thead>
+              <tbody id="sym-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /output-results -->
+  </section>
+
+</main>
+
+<footer>
+  <p>Mini Language Compiler · v3 Visualization Edition · Lexer → Parser → Symbol Table</p>
+</footer>
+
+<!-- ══ JAVASCRIPT ══════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ─────────────────────────────────────────────────────────────
+// SAMPLE PROGRAMS
+// ─────────────────────────────────────────────────────────────
+const SAMPLES = {
+
+// ── Sample 1: Small clean valid program (18 lines) ──────────
+1:`// Sample 1: Clean valid program — expects ZERO errors
+// Demonstrates: int/float/char, if-else, while loop
+
+int age;
+float gpa;
+char grade;
+int counter;
+int limit;
+
+age     = 21;
+gpa     = 3.85;
+limit   = 5;
+counter = 0;
+
+if (age >= 18) {
+    grade = 'A';
+    printf("Adult student");
+} else {
+    grade = 'F';
+    printf("Underage student");
+}
+
+while (counter < limit) {
+    gpa = gpa + 0.1;
+    counter = counter + 1;
+}
+
+printf(age);
+printf(gpa);
+printf(grade);`,
+
+// ── Sample 2: Large valid program (110+ lines) ───────────────
+2:`// Sample 2: Large valid program — expects ZERO errors
+// Demonstrates: nested loops, complex conditions, many vars
+
+int a;
+int b;
+int c;
+int sum;
+int product;
+int diff;
+int maxVal;
+int minVal;
+int count;
+int i;
+int j;
+float avg;
+float rate;
+float temp;
+char category;
+
+a = 12;
+b = 25;
+c = 18;
+sum = 0;
+product = 1;
+diff = 0;
+maxVal = 0;
+minVal = 999;
+count = 0;
+rate = 0.15;
+avg = 0.0;
+
+sum = a + b + c;
+diff = b - a;
+product = a * b;
+
+if (a > b) {
+    maxVal = a;
+    minVal = b;
+} else {
+    maxVal = b;
+    minVal = a;
+}
+
+if (maxVal > c) {
+    printf("First two are dominant");
+} else {
+    maxVal = c;
+    printf("Third value is the max");
+}
+
+if (minVal > c) {
+    minVal = c;
+    printf("Third value is the min");
+}
+
+avg = sum / 3;
+count = 0;
+
+while (count < 5) {
+    temp = count * rate;
+    printf(temp);
+    count = count + 1;
+}
+
+for (i = 1; i < a; i = i + 1) {
+    sum = sum + i;
+}
+
+for (j = 0; j < b; j = j + 2) {
+    product = product + j;
+}
+
+if (avg > 15) {
+    if (diff > 10) {
+        category = 'A';
+        printf("Category A: high avg, large diff");
+    } else {
+        category = 'B';
+        printf("Category B: high avg, small diff");
+    }
+} else {
+    if (sum > 50) {
+        category = 'C';
+        printf("Category C: low avg, large sum");
+    } else {
+        category = 'D';
+        printf("Category D: low avg, small sum");
+    }
+}
+
+int pass;
+pass = 0;
+
+while (pass < 3) {
+    if (pass == 0) {
+        printf("First pass");
+    }
+    if (pass == 1) {
+        printf("Second pass");
+    }
+    if (pass == 2) {
+        printf("Third pass");
+    }
+    pass = pass + 1;
+}
+
+printf(sum);
+printf(product);
+printf(diff);
+printf(avg);
+printf(maxVal);
+printf(minVal);
+printf(count);
+printf(category);`,
+// ── Sample 3: Multi-error program ───────────────────────────
+3:`// Sample 3: MULTIPLE ERRORS — demonstrates full chart visualization
+//
+// Error breakdown for chart:
+//   Lexical    → 2  (@-sign invalid char, #-sign invalid char)
+//   Syntax     → 3  (missing semicolons x2, missing closing brace)
+//   Validation → 2  (undeclared 'result', duplicate 'score')
+//
+// Total = 7 errors across 3 categories — great chart demo!
+
+int x;
+int y;
+int total;
+float score;
+char label;
+
+x = 10;
+y = @25;
+
+total = x + y
+
+int score;
+score = total + 5;
+
+label = #A;
+
+int limit;
+limit = 50;
+
+if (limit > 40) {
+    printf("Limit exceeded")
+} else {
+    printf("Within bounds");
+}
+
+printf(result);
+printf(total);
+printf(score);`,
+
+// ── Sample 4: Unsupported features ──────────────────────────
+4:`// Sample 4: Mostly correct + UNSUPPORTED FEATURES
+//
+// Valid parts compile fine.
+// Unsupported constructs trigger "Unsupported" error category:
+//   - Function definition: int add(int a, int b) { ... }
+//   - Array declaration:   int nums[10];
+//   - Return statement:    return x + y;
+
+int x;
+int y;
+float result;
+char flag;
+int count;
+
+x      = 5;
+y      = 10;
+result = 3.14;
+flag   = 'Y';
+count  = 0;
+
+if (x < y) {
+    result = result + 1.0;
+    printf("x is smaller than y");
+} else {
+    result = result - 0.5;
+    printf("x is not smaller");
+}
+
+while (count < 3) {
+    count = count + 1;
+    printf(count);
+}
+
+for (int i = 0; i < x; i = i + 1) {
+    y = y + i;
+}
+
+printf(x);
+printf(y);
+printf(result);
+
+int add(int a, int b) {
+    return a + b;
+}
+
+int nums[10];`
+};
+
+// ─────────────────────────────────────────────────────────────
+// COLOR / ICON MAPS
+// ─────────────────────────────────────────────────────────────
+const TYPE_COLOR = {
+  Lexical    : '#f6c84b',
+  Syntax     : '#f56565',
+  Validation : '#a78bfa',
+  Unsupported: '#fb923c',
+  Input      : '#59a9ff',
+  Network    : '#59a9ff',
+  Unknown    : '#7a82a8',
+};
+
+const TYPE_ICON = {
+  Lexical    : '🔤',
+  Syntax     : '📐',
+  Validation : '🔍',
+  Unsupported: '🚫',
+  Input      : '📥',
+  Network    : '🌐',
+  Unknown    : '❓',
+};
+
+const CAT_ICON = {
+  'Invalid Character'    : '⚡',
+  'Unterminated Literal' : '📜',
+  'Missing Semicolon'    : '；',
+  'Missing Brace'        : '{}',
+  'Missing Parenthesis'  : '()',
+  'Missing Identifier'   : '🏷',
+  'Invalid Condition'    : '⚖',
+  'Unexpected Token'     : '🎲',
+  'Invalid Expression'   : '🔢',
+  'Missing Type Keyword' : '🔑',
+  'Missing Assignment'   : '✏',
+  'Syntax Error'         : '📐',
+  'Duplicate Declaration': '♻',
+  'Undeclared Variable'  : '👻',
+  'Validation Error'     : '🔍',
+  'Unsupported Functions': '⚙',
+  'Unsupported Arrays'   : '📦',
+  'Unsupported Switch'   : '🔀',
+  'Unsupported Return'   : '↩',
+  'Unsupported Feature'  : '🚫',
+  'Empty Input'          : '📭',
+};
+
+// ─────────────────────────────────────────────────────────────
+// DOM REFS
+// ─────────────────────────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const codeInput       = $('code-input');
+const lineNumbers     = $('line-numbers');
+const lineColInfo     = $('line-col-info');
+const btnCompile      = $('btn-compile');
+const btnLabel        = $('btn-label');
+const btnSamples      = $('btn-samples');
+const samplesMenu     = $('samples-menu');
+const btnClear        = $('btn-clear');
+const btnCopy         = $('btn-copy');
+const outputIdle      = $('output-idle');
+const outputLoading   = $('output-loading');
+const outputResults   = $('output-results');
+const statusBadge     = $('status-badge');
+const chartSection    = $('chart-section');
+const drillSection    = $('drilldown-section');
+const detailSection   = $('detail-section');
+const tabsContainer   = $('tabs-container');
+const tokenCountBadge = $('token-count-badge');
+const symCountBadge   = $('sym-count-badge');
+const tokenTbody      = $('token-tbody');
+const parseTreeOut    = $('parse-tree-output');
+const symTbody        = $('sym-tbody');
+const symEmpty        = $('sym-empty');
+const symTableWrap    = $('sym-table-wrap');
+
+// ─────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────
+let lastData    = null;
+let chartInst   = null;   // Chart.js instance
+let activeType  = null;   // currently drilled-down error type
+
+// ─────────────────────────────────────────────────────────────
+// SAMPLE DROPDOWN
+// ─────────────────────────────────────────────────────────────
+btnSamples.addEventListener('click', e => { e.stopPropagation(); samplesMenu.classList.toggle('open'); });
+document.addEventListener('click', () => samplesMenu.classList.remove('open'));
+document.querySelectorAll('.sample-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    codeInput.value = SAMPLES[btn.dataset.sample] || '';
+    updateLineNumbers();
+    samplesMenu.classList.remove('open');
+    codeInput.focus();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// EDITOR HELPERS
+// ─────────────────────────────────────────────────────────────
+function updateLineNumbers() {
+  const n = codeInput.value.split('\n').length;
+  lineNumbers.textContent = Array.from({length:n},(_,i)=>i+1).join('\n');
+}
+function updateCursorInfo() {
+  const txt = codeInput.value.substring(0, codeInput.selectionStart);
+  const ls  = txt.split('\n');
+  lineColInfo.textContent = `Line ${ls.length}, Col ${ls[ls.length-1].length+1}`;
+}
+codeInput.addEventListener('input',  () => { updateLineNumbers(); updateCursorInfo(); });
+codeInput.addEventListener('click',  updateCursorInfo);
+codeInput.addEventListener('keyup',  updateCursorInfo);
+codeInput.addEventListener('scroll', () => { lineNumbers.scrollTop = codeInput.scrollTop; });
+codeInput.addEventListener('keydown', e => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = codeInput.selectionStart, end = codeInput.selectionEnd;
+    codeInput.value = codeInput.value.substring(0,s) + '    ' + codeInput.value.substring(end);
+    codeInput.selectionStart = codeInput.selectionEnd = s + 4;
+    updateLineNumbers();
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// TAB SWITCHING
+// ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// PANEL VISIBILITY
+// ─────────────────────────────────────────────────────────────
+function showMain(panel) {
+  [outputIdle, outputLoading, outputResults].forEach(p => p.style.display = 'none');
+  panel.style.display = panel === outputLoading ? 'flex' : 'block';
+}
+
+// ─────────────────────────────────────────────────────────────
+// CLEAR
+// ─────────────────────────────────────────────────────────────
+btnClear.addEventListener('click', () => {
+  codeInput.value = '';
+  updateLineNumbers();
+  outputIdle.style.display = 'flex';
+  outputLoading.style.display = 'none';
+  outputResults.style.display = 'none';
+  btnCopy.style.display = 'none';
+  destroyChart();
+});
+
+// ─────────────────────────────────────────────────────────────
+// COPY
+// ─────────────────────────────────────────────────────────────
+btnCopy.addEventListener('click', () => {
+  navigator.clipboard.writeText(parseTreeOut.textContent).then(() => {
+    btnCopy.textContent = '✓ Copied!';
+    setTimeout(() => { btnCopy.textContent = 'Copy Tree'; }, 1500);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// COMPILE
+// ─────────────────────────────────────────────────────────────
+btnCompile.addEventListener('click', runCompile);
+codeInput.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runCompile();
+});
+
+async function runCompile() {
+  const code = codeInput.value.trim();
+  if (!code) { codeInput.focus(); return; }
+
+  btnLabel.textContent = '⏳ Compiling…';
+  btnCompile.disabled  = true;
+  showMain(outputLoading);
+
+  let data;
+  try {
+    const resp = await fetch('/compile', {
+      method : 'POST',
+      headers: {'Content-Type':'application/json'},
+      body   : JSON.stringify({code}),
+    });
+    data = await resp.json();
+  } catch(err) {
+    data = {
+      success:false,
+      errors:[{type:'Network',line:0,message:'Could not reach the server. Is Flask running?',suggestion:'Run: python app.py  and refresh the page.'}],
+      summary:{Network:1},
+      details:{Network:{'Connection Error':[{type:'Network',line:0,message:'Could not reach the server.',suggestion:'Run: python app.py'}]}},
+      tokens:[],parse_tree:'',symbol_table:[],token_count:0,
+    };
+  }
+
+  btnLabel.textContent = '▶ Compile';
+  btnCompile.disabled  = false;
+  lastData = data;
+  renderOutput(data);
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER OUTPUT — orchestrates all three levels
+// ─────────────────────────────────────────────────────────────
+function renderOutput(data) {
+  showMain(outputResults);
+  btnCopy.style.display = 'none';
+  destroyChart();
+  activeType = null;
+
+  // Hide drill / detail to start fresh
+  drillSection.style.display  = 'none';
+  detailSection.style.display = 'none';
+
+  const errors = data.errors || [];
+  const total  = errors.length;
+
+  // ── Status badge ──────────────────────────────────────────
+  if (data.success) {
+    statusBadge.className   = 'status-badge status-ok';
+    statusBadge.textContent = `✓  Compiled successfully  (${data.token_count} tokens)`;
+  } else {
+    statusBadge.className   = 'status-badge status-err';
+    statusBadge.textContent = `✗  Compilation failed — ${total} error${total!==1?'s':''} found`;
+  }
+
+  // ── LEVEL 1: Chart ────────────────────────────────────────
+  if (data.success) {
+    renderZeroChart();
+  } else {
+    renderErrorChart(data.summary || {}, data.details || {});
+  }
+
+  // ── Compiler output tabs ──────────────────────────────────
+  if (data.success) {
+    tabsContainer.style.display = 'block';
+    renderTokenTable(data.tokens);
+    parseTreeOut.textContent = data.parse_tree;
+    btnCopy.style.display    = 'inline-flex';
+    renderSymbolTable(data.symbol_table);
+    document.querySelector('[data-tab="tokens"]').click();
+  } else if (data.tokens && data.tokens.length > 0) {
+    tabsContainer.style.display = 'block';
+    renderTokenTable(data.tokens);
+    document.querySelector('[data-tab="tokens"]').click();
+    symEmpty.style.display     = 'flex';
+    symTableWrap.style.display = 'none';
+  } else {
+    tabsContainer.style.display = 'none';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// LEVEL 1 — CHART (donut + legend rows)
+// ─────────────────────────────────────────────────────────────
+function renderZeroChart() {
+  chartSection.style.display = 'block';
+  $('chart-total').textContent       = '0';
+  $('chart-total').className         = 'chart-total zero';
+  $('chart-total-label').textContent = 'errors found';
+
+  $('chart-body').innerHTML = `
+    <div class="chart-zero" style="width:100%;text-align:center;padding:18px 0">
+      <div class="chart-zero-icon">🎉</div>
+      <div class="chart-zero-text">No errors — program is clean!</div>
+    </div>`;
+}
+
+function renderErrorChart(summary, details) {
+  chartSection.style.display = 'block';
+
+  const types  = Object.keys(summary);
+  const counts = types.map(t => summary[t]);
+  const colors = types.map(t => TYPE_COLOR[t] || '#7a82a8');
+  const total  = counts.reduce((a,b)=>a+b,0);
+
+  $('chart-total').textContent       = total;
+  $('chart-total').className         = 'chart-total';
+  $('chart-total-label').textContent = 'total error' + (total!==1?'s':'');
+
+  // Build chart body HTML
+  $('chart-body').innerHTML = `
+    <div class="chart-canvas-wrap"><canvas id="err-chart"></canvas></div>
+    <div class="chart-legend" id="chart-legend"></div>`;
+
+  // Legend rows
+  const legendEl = $('chart-legend');
+  types.forEach((t, idx) => {
+    const row = document.createElement('div');
+    row.className  = 'legend-row';
+    row.dataset.type  = t;
+    row.dataset.count = summary[t];
+    row.setAttribute('data-count', summary[t]);
+    row.style.setProperty('--row-color', colors[idx]);
+    row.innerHTML = `
+      <div class="legend-dot" style="background:${colors[idx]}"></div>
+      <div class="legend-name">${escHtml(t)}</div>
+      <div class="legend-count" style="color:${colors[idx]}">${summary[t]}</div>
+      <div class="legend-arrow">›</div>`;
+
+    row.querySelector('.legend-row')
+    // fix: style the ::before pseudo via inline approach
+    row.style.setProperty('--before-bg', colors[idx]);
+    row.style.borderLeftColor = colors[idx] + '55';
+
+    if (summary[t] > 0) {
+      row.addEventListener('click', () => {
+        document.querySelectorAll('.legend-row').forEach(r => r.classList.remove('active'));
+        row.classList.add('active');
+        showDrillDown(t, details[t] || {});
+      });
+    }
+    legendEl.appendChild(row);
+  });
+
+  // Donut chart
+  const ctx = document.getElementById('err-chart').getContext('2d');
+  chartInst = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels  : types,
+      datasets: [{
+        data           : counts,
+        backgroundColor: colors.map(c => c + 'cc'),
+        borderColor    : colors,
+        borderWidth    : 2,
+        hoverOffset    : 6,
+      }]
+    },
+    options: {
+      cutout   : '68%',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 600, easing: 'easeOutQuart' },
+      plugins  : {
+        legend : { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed} error${ctx.parsed!==1?'s':''}`,
+          },
+          backgroundColor: '#111526',
+          borderColor    : '#252a42',
+          borderWidth    : 1,
+          titleColor     : '#dde3f8',
+          bodyColor      : '#7a82a8',
+          padding        : 10,
+        }
+      },
+      onClick: (_evt, elements) => {
+        if (!elements.length) return;
+        const idx  = elements[0].index;
+        const t    = types[idx];
+        document.querySelectorAll('.legend-row').forEach(r => {
+          r.classList.toggle('active', r.dataset.type === t);
+        });
+        showDrillDown(t, details[t] || {});
+      }
+    }
+  });
+}
+
+function destroyChart() {
+  if (chartInst) { chartInst.destroy(); chartInst = null; }
+  chartSection.style.display = 'none';
+}
+
+// ─────────────────────────────────────────────────────────────
+// LEVEL 2 — DRILL-DOWN (categories within one error type)
+// ─────────────────────────────────────────────────────────────
+function showDrillDown(errorType, categoriesMap) {
+  activeType = errorType;
+  const color = TYPE_COLOR[errorType] || '#7a82a8';
+  const icon  = TYPE_ICON[errorType]  || '❓';
+
+  // Badge
+  const badge = $('drilldown-type-badge');
+  badge.textContent   = icon + ' ' + errorType;
+  badge.style.background = color + '22';
+  badge.style.color      = color;
+
+  // Category cards
+  const grid = $('category-grid');
+  grid.innerHTML = '';
+  Object.entries(categoriesMap).forEach(([cat, errs]) => {
+    const catIcon = CAT_ICON[cat] || '•';
+    const card = document.createElement('div');
+    card.className = 'category-card';
+    card.innerHTML = `
+      <span class="cat-icon">${catIcon}</span>
+      <span class="cat-name">${escHtml(cat)}</span>
+      <span class="cat-count"><span class="cat-count-badge" style="color:${color}">${errs.length}</span></span>
+      <span class="cat-chevron">›</span>`;
+    card.addEventListener('click', () => showDetail(errorType, cat, errs));
+    grid.appendChild(card);
+  });
+
+  drillSection.style.display  = 'block';
+  detailSection.style.display = 'none';
+
+  // Scroll drilldown into view
+  drillSection.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+$('drilldown-back').addEventListener('click', () => {
+  drillSection.style.display  = 'none';
+  detailSection.style.display = 'none';
+  activeType = null;
+  document.querySelectorAll('.legend-row').forEach(r => r.classList.remove('active'));
+});
+
+// ─────────────────────────────────────────────────────────────
+// LEVEL 3 — DETAIL (individual error cards)
+// ─────────────────────────────────────────────────────────────
+function showDetail(errorType, category, errors) {
+  $('crumb-type').textContent = errorType;
+  $('crumb-cat').textContent  = category;
+
+  const cards = $('detail-cards');
+  cards.innerHTML = '';
+
+  errors.forEach((e, idx) => {
+    const typeKey = (e.type||'').toLowerCase();
+    const lineStr = e.line > 0 ? `Line ${e.line}` : '';
+    const suggHtml = e.suggestion
+      ? `<div class="ecv3-suggest"><strong>💡 Suggestion:</strong> ${escHtml(e.suggestion)}</div>`
+      : '';
+    const div = document.createElement('div');
+    div.className = `error-card-v3 etype-${typeKey}`;
+    div.innerHTML = `
+      <div class="ecv3-header">
+        <span class="ecv3-num">#${idx+1}</span>
+        <span class="ecv3-badge">${escHtml(e.type||'Error')}</span>
+        ${lineStr ? `<span class="ecv3-line">${lineStr}</span>` : ''}
+      </div>
+      <div class="ecv3-msg">${escHtml(e.message||'Unknown error.')}</div>
+      ${suggHtml}`;
+    cards.appendChild(div);
+  });
+
+  detailSection.style.display = 'block';
+  detailSection.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+$('detail-back').addEventListener('click', () => {
+  detailSection.style.display = 'none';
+});
+
+// ─────────────────────────────────────────────────────────────
+// TOKEN TABLE
+// ─────────────────────────────────────────────────────────────
+function renderTokenTable(tokens) {
+  tokenCountBadge.textContent = tokens.length;
+  tokenTbody.innerHTML = tokens.map((t,i) =>
+    `<tr>
+       <td class="td-num">${i+1}</td>
+       <td><span class="token-type tt-${t.type.toLowerCase()}">${t.type}</span></td>
+       <td class="td-val">${escHtml(t.value)}</td>
+       <td class="td-line">${t.line}</td>
+     </tr>`
+  ).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+// SYMBOL TABLE
+// ─────────────────────────────────────────────────────────────
+function renderSymbolTable(syms) {
+  symCountBadge.textContent = syms.length;
+  if (syms.length === 0) {
+    symEmpty.style.display     = 'flex';
+    symTableWrap.style.display = 'none';
+  } else {
+    symEmpty.style.display     = 'none';
+    symTableWrap.style.display = 'block';
+    symTbody.innerHTML = syms.map(s =>
+      `<tr>
+         <td class="td-id">${escHtml(s.name)}</td>
+         <td><span class="type-badge type-${s.type}">${s.type}</span></td>
+         <td class="td-line">line ${s.line}</td>
+       </tr>`
+    ).join('');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// Init
+updateLineNumbers();
+</script>
+</body>
+</html>
