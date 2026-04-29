@@ -1,98 +1,68 @@
-# 🚀 Mini Language Compiler (Web-Based)
+# Mini Language Compiler — v3 Visualization Edition
 
-## 📌 Overview
+## What's New in v3
+- **Level 1 — Error Distribution Chart** (donut chart via Chart.js): shows error counts by type (Lexical / Syntax / Validation / Unsupported) after every compile.
+- **Level 2 — Drill-Down**: click any error type in the chart/legend to see a category breakdown (e.g., "Missing Semicolon", "Invalid Character").
+- **Level 3 — Error Details**: click any category card to see individual error cards with line numbers, messages, and suggestions.
+- 4 enhanced sample programs demonstrating all visualization paths.
+- Modernized dark UI with smooth animations.
 
-This project is a **web-based Mini Language Compiler** built using Python and Flask.
-It performs **Lexical Analysis** and **Syntax Analysis** on user input code and displays tokens, errors, and symbol table in an interactive interface.
+## Quick Start
 
----
-
-## 🌟 Features
-
-* 🔍 Lexical Analysis (Token Generation using Regex)
-* 🧠 Syntax Analysis (Parser Implementation)
-* ⚠️ Smart Error Detection & Explanation
-* 📊 Symbol Table Generation
-* 🌐 Web Interface using Flask
-* ⚡ Real-time Code Processing
-
----
-
-## 🛠️ Tech Stack
-
-* **Backend:** Python (Flask)
-* **Frontend:** HTML, CSS
-* **Core Logic:** Regular Expressions, Parsing Techniques
-
----
-
-## 📂 Project Structure
-
-```
-project/
- ├── app.py
- ├── lexer.py
- ├── parser.py
- ├── symbol_table.py
- ├── error_handler.py
- ├── grammar.txt
- ├── static/
- │     └── style.css
- └── templates/
-       └── index.html
-```
-
----
-
-## ▶️ How to Run
-
-### 1️⃣ Install Dependencies
-
-```
+### 1. Install dependencies
+```bash
 pip install flask
 ```
 
-### 2️⃣ Run Application
-
-```
+### 2. Run the server
+```bash
+cd compiler_web
 python app.py
 ```
 
-### 3️⃣ Open in Browser
-
+### 3. Open browser
 ```
-http://127.0.0.1:5000/
+http://127.0.0.1:5000
 ```
 
----
+## How to Use
+1. Type or paste source code into the editor (or load a Sample from the dropdown).
+2. Click **▶ Compile** (or press `Ctrl+Enter`).
+3. The **Error Distribution Chart** appears immediately.
+4. Click a colored bar/legend row → **Category Breakdown** appears below.
+5. Click a category card → **Individual Error Details** appear.
+6. On success, browse **Tokens**, **Parse Tree**, and **Symbol Table** tabs.
 
-## 📊 Output Includes
+## Sample Programs
+| # | Description | Errors |
+|---|-------------|--------|
+| 1 | Small valid program (~28 lines) | 0 — chart shows clean |
+| 2 | Large valid program (110+ lines) | 0 — full logic demo |
+| 3 | Multi-error program | Lexical×2, Syntax×2, Validation×3 |
+| 4 | Unsupported features | Unsupported×2 (function + array) |
 
-* ✅ Tokens List
-* ✅ Syntax Errors (if any)
-* ✅ Parse Results
-* ✅ Symbol Table
+## Compiler Supported Features
+- Types: `int`, `float`, `char`
+- Declarations with optional initializers
+- Assignments
+- `if` / `else`
+- `while` loops
+- `for` loops
+- `printf` statements
+- Arithmetic: `+ - * / %`
+- Relational: `> < >= <= == !=`
+- Logical: `&& ||`
 
----
-
-## 💡 Working
-
-1. User inputs code in the web interface
-2. Lexer breaks code into tokens
-3. Parser checks syntax rules
-4. Errors are detected and explained
-5. Symbol table stores identifiers
-
----
-
-## 🎯 Applications
-
-* Compiler Design Learning
-* Educational Tools
-* Code Analysis Systems
-
----
-
-## ⭐ Conclusion
-
-This project demonstrates the working of a **compiler front-end**, including lexical and syntax analysis, integrated with a web-based interface for better usability.
+## Project Structure
+```
+compiler_web/
+├── app.py            ← Flask server + error grouping (v3)
+├── lexer.py          ← Regex tokenizer (unchanged)
+├── parser.py         ← Recursive descent parser (unchanged)
+├── symbol_table.py   ← Variable tracking (unchanged)
+├── error_handler.py  ← Structured error types (unchanged)
+├── templates/
+│   └── index.html    ← Full UI with Chart.js visualization (v3)
+└── static/
+    └── style.css     ← Dark theme styles (v3)
+```
